@@ -38,21 +38,41 @@ function toneJSInit() {
 }
 
 toneJSInit();
+
 //
 
-function testFeatureCapability() {
+function testMediaRecorder () {
+       
+  var isMediaRecorderSupported = false;
+  
+  try {
+      MediaRecorder;
+      isMediaRecorderSupported = true;
+  } catch (err) {
+      console.log("no MediaRecorder");
+  }
+  console.log(isMediaRecorderSupported);
+  return(isMediaRecorderSupported);
+}
 
-    if (Modernizr.audio & Modernizr.audiopreload & Modernizr.webaudio) {
+   
+
+function testFeatureCapability() {
+  
+    console.log(testMediaRecorder());
+    
+    if (Modernizr.audio & Modernizr.audiopreload & Modernizr.webaudio & testMediaRecorder()) {
         console.log("This browser has the necessary features");
         Shiny.setInputValue("browser_capable", "TRUE");
-        } else {
+    } 
+    else {
         console.log("This browser does not have the necessary features");
         Shiny.setInputValue("browser_capable", "FALSE");
-        }
+    }
+    
 }
 
 function getUserInfo () {
-    testFeatureCapability();
     console.log(navigator);
     var _navigator = {};
     for (var i in navigator) _navigator[i] = navigator[i];
@@ -174,13 +194,12 @@ function recordAndStop (ms, showStop, hidePlay, id, sound) {
   
 function triggerNote(sound, freq_tone, seconds) {
   
-  //console.log(freq_tone);
-  console.log(Tone.Midi(freq_tone).toMidi());
-
-
   if (sound === "piano") {
+    console.log("piano");
+    console.log(freq_tone);
+    console.log(typeof freq_tone);
+    console.log(Tone.Frequency(freq_tone, "note").toMidi());
   	piano.triggerAttackRelease(freq_tone, seconds);
-
   }
   
   else {
@@ -215,7 +234,7 @@ function  playTone(tone, seconds, id, sound) {
 function playSeq (note_list, hidePlay, id, sound) {
     // hide play. boolean. whether to hide the play button
   
-  rangeTest(note_list);
+  //rangeTest(note_list);
 
   updatePlaybackCount();
   
@@ -223,10 +242,15 @@ function playSeq (note_list, hidePlay, id, sound) {
   if (playback_count === 3) {
     hidePlayButton();
   }
-
-  midi_list = note_list.map(x => Tone.Frequency(x, "midi").toNote());
-  console.log(midi_list);
-  last_note = midi_list.length;
+  
+  // seems to be a bug with the piano sound where it plays an octave higher
+  
+  if (sound === "piano") {
+    note_list = note_list.map(x => x-12);
+  }
+  freq_list = note_list.map(x => Tone.Frequency(x, "midi").toNote());
+  console.log(freq_list);
+  last_note = freq_list.length;
   count = 0;
   var pattern = new Tone.Sequence(function(time, note){
     console.log(note);
@@ -235,12 +259,16 @@ function playSeq (note_list, hidePlay, id, sound) {
     count = count + 1;
   
     if (count === last_note) {
-      if (playback_count === 1) { recordAndStop(null, true, hidePlay, id); } // only record the first time
+      
+      if (playback_count === 1) { 
+        setTimeout(() => {  recordAndStop(null, true, hidePlay, id); }, 400); // delay to avoid catching stimuli in recording
+      } // only record the first time
+      
       pattern.stop();
       Tone.Transport.stop();
     }
 
-  }, midi_list);
+  }, freq_list);
   
   pattern.start(0).loop = false;
   Tone.Transport.start();

@@ -21,7 +21,6 @@ library(mdt)
 library(psyquest)
 library(BDS)
 library(piat)
-library(psyquest)
 
 # constants
 

@@ -700,7 +700,7 @@ microphone_calibration_page <- function(admin_ui = NULL, on_complete = NULL, lab
     
     img(id = "record",
         src = "img/mic128.png",
-        onclick = "toggleRecording(this);initAudio();",
+        onclick = "toggleRecording(this);getMedia();",
         style = "display:block; margin:1px auto;", width = "100px", height = "100px"),
     
     # 

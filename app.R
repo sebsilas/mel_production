@@ -690,8 +690,7 @@ microphone_calibration_page <- function(admin_ui = NULL, on_complete = NULL, lab
     includeScript("www/js/Tone.js"),
     includeScript("www/js/audio_display.js"),
     includeScript("www/js/speech.js"),
-    includeScript("www/js/audio_display.js"),
-    
+
     # start body
     
     

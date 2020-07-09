@@ -92,7 +92,7 @@ xhr.send();
   includeScript("www/js/Tonejs-Instruments.js"),
   includeScript("www/js/modernizr-custom.js"),
   shiny::tags$script(src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"),
-  shiny::tags$script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"),
+  #shiny::tags$script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"),
   includeScript("www/js/main.js"),
 )
 

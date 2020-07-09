@@ -107,9 +107,10 @@ function errorHandler (e) {
         console.log(e);
 }
 
+
 async function getMedia(pc) {
     
-    if (typeof navigator.mediaDevices === 'undefined') {
+    if (typeof navigator.mediaDevices.getUserMedia === 'undefined') {
         
         navigator.getUserMedia = (
         navigator.getUserMedia ||

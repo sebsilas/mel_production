@@ -109,22 +109,22 @@ function errorHandler (e) {
 
 async function getMedia(pc) {
     
-if (typeof navigator.mediaDevices.getUserMedia === 'undefined') {
-    
-    navigator.getUserMedia = (
-    navigator.getUserMedia ||
-    navigator.webkitGetUserMedia ||
-    navigator.mozGetUserMedia ||
-    navigator.msGetUserMedia
-);
-    navigator.getUserMedia({
-        audio: true
-    }, gotStream, errorHandler);
-} else {
-    navigator.mediaDevices.getUserMedia({
-        audio: true
-    }).then(gotStream).catch(errorHandler);
-}
+    if (typeof navigator.mediaDevices === 'undefined') {
+        
+        navigator.getUserMedia = (
+        navigator.getUserMedia ||
+        navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia ||
+        navigator.msGetUserMedia
+    );
+        navigator.getUserMedia({
+            audio: true
+        }, gotStream, errorHandler);
+    } else {
+        navigator.mediaDevices.getUserMedia({
+            audio: true
+        }).then(gotStream).catch(errorHandler);
+    }
   
 }
 

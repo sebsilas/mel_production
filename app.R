@@ -18,9 +18,9 @@ library(psychTestRCAT)
 library(mpt)
 library(JAJ)
 library(mdt)
-library(psyquest)
 library(BDS)
 library(piat)
+library(psyquest)
 
 # constants
 
@@ -224,6 +224,7 @@ get.timecode <- function(input, state, getStimuli, getRhythms, ...) {
   if (getStimuli == TRUE) {
     page_answer$playback.count <- input$playback_count
     page_answer$stimuli.pitch <- input$stimuli_pitch
+    page_answer$playback.times <- input$playback_times
   }
 
   if (getRhythms == TRUE) {
@@ -446,11 +447,42 @@ create.pages <- function(items, page_type, page_pars) {
       ##  
     }
     
-    tl <- append(tl, page, after = length(tl)) # add to timeline. these pages have the results message already appended
+    tl <- append(tl, page, after = length(tl)) 
+    tl <- append(tl, eval(parse(text="elt_save_results_to_disk(complete = FALSE)")), after = length(tl))
     
   } # end for loop
   
   tl
+}
+
+sample.random.stimuli.no <- function(page_type, no_in_corpus, no_to_select, page_pars) {
+  
+  range_of_lengths <- seq(4, 4+no_to_select) # 4 notes minimum
+
+  samp <- sample(1:no_in_corpus, no_to_select)
+  
+  tl <- c()
+  
+  for (i in 1:no_to_select) {
+    
+    page_pars$label <- paste0(page_type,"_", i)
+    page_pars$stimuli_no <- samp[[i]]
+    page_pars$note_no <- range_of_lengths[i]
+    
+    if (i == 1) {
+      page_pars$body <- page_pars$text
+      page_pars$text <- NULL
+    } else { }
+    
+    page.builder.fun <- page.builder(page_type, page_pars)
+    page <- random.note.from.user.range(page.builder.fun, TRUE)
+    tl <- append(tl, page, after = length(tl)) 
+    tl <- append(tl, eval(parse(text="elt_save_results_to_disk(complete = FALSE)")), after = length(tl))
+    
+  } # end for loop
+  
+  tl
+  
 }
 
 
@@ -517,9 +549,17 @@ create.test <- function(test_format, item_bank) {
       # if _GENERATE.ITEMS_ keyword found then generate a bunch of trials according to the page time 
       
       if (page_info$label == "_GENERATE.ITEMS_") {
-        user.sample <- item.sampler(item_bank, page_info$stimuli_no)
-        pages <- create.pages(user.sample, page_type, page_pars)
-        tl <- append(tl, pages, after = length(tl))
+        if (page_type == "play_melody_record_audio_page") {
+          user.sample <- item.sampler(item_bank, page_info$stimuli_no)
+          pages <- create.pages(user.sample, page_type, page_pars)
+          tl <- append(tl, pages, after = length(tl))
+        }
+        else if (page_type == "play_midi_file_record_audio_page") {
+          pages <- sample.random.stimuli.no(page_type, 629, page_info$stimuli_no, page_pars)
+          tl <- append(tl, pages, after = length(tl))
+        }
+        else {}
+        
       } 
       else {
         # i.e manually create each page as per the row in the excel file
@@ -980,7 +1020,8 @@ play_midi_file_record_audio_page <- function(label= NULL, body = NULL, on_comple
     body,
     
     shiny::tags$div(id="button_area",
-                    shiny::tags$button(button_text, id="playButton", onclick=paste0("playMidiFileAndRecordAfter(\"",url,"\",true, ",note_no,", true, this.id, ",transpose,", 'piano')"))
+          shiny::tags$button(button_text, id="playButton", 
+          onclick=shiny::HTML(paste0("playMidiFileAndRecordAfter(\"",url,"\", true, ",note_no,", true, this.id, ",transpose,", 'piano')")))
     ),
     
     shiny::tags$div(id="loading_area"),

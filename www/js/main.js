@@ -39,6 +39,9 @@ function toneJSInit() {
 
 toneJSInit();
 
+// a little delay after playback finishes before hitting record
+record_delay = 400;
+
 //
 
 function testMediaRecorder () {
@@ -176,7 +179,7 @@ function hideButton (e) {
 //
 
 
-function recordAndStop (ms, showStop, hidePlay, id, sound) {
+function recordAndStop (ms, showStop, hidePlay, id) {
     // start recording but then stop after x milliseconds
     
     NewAudio.startRecording(id);
@@ -192,19 +195,14 @@ function recordAndStop (ms, showStop, hidePlay, id, sound) {
 
 }
   
-function triggerNote(sound, freq_tone, seconds) {
-  
+function triggerNote(sound, freq_tone, seconds, time) {
+
   if (sound === "piano") {
-    console.log("piano");
-    console.log(freq_tone);
-    console.log(typeof freq_tone);
-    console.log(Tone.Frequency(freq_tone, "note").toMidi());
-  	piano.triggerAttackRelease(freq_tone, seconds);
+  	piano.triggerAttackRelease(freq_tone, seconds, time);
   }
   
   else {
-  	console.log("tone");
-    synth.triggerAttackRelease(freq_tone, seconds);
+    synth.triggerAttackRelease(freq_tone, seconds, time);
   }
 
 }
@@ -261,7 +259,7 @@ function playSeq (note_list, hidePlay, id, sound) {
     if (count === last_note) {
       
       if (playback_count === 1) { 
-        setTimeout(() => {  recordAndStop(null, true, hidePlay, id); }, 400); // delay to avoid catching stimuli in recording
+        setTimeout(() => {  recordAndStop(null, true, hidePlay, id); }, record_delay); // delay to avoid catching stimuli in recording
       } // only record the first time
       
       pattern.stop();
@@ -280,63 +278,68 @@ function playSeq (note_list, hidePlay, id, sound) {
 
 function toneJSPlay (midi, note_no, hidePlay, transpose, id, sound) {
   
-    console.log(transpose);
-    const now = Tone.now() + 0.5;
-    const synths = [];
+    var now = Tone.now() + 0.5;
+    var synths = [];
     midi.tracks.forEach(track => {
         
         if (note_no === "max") {
-            notes_list = track.notes; console.log(track.notes); // need to test full notes
+            notes_list = track.notes; 
+    
+            // console.log(track.notes); // need to test full notes
             dur = track['duration'] * 1000; 
          
         } else {
-                dur = 0;
-               notes_list = track['notes'].slice(0, note_no);
-               notes_list.forEach(el => { 
-                   console.log(el['duration']); 
-                   dur = dur+el['duration'];
-                   console.log(dur);
+            // reduced note list
+            var dur = 0;
+            notes_list = track['notes'].slice(0, note_no);
+            // get duration of contracted notes list
+            notes_list.forEach(el => { 
+                   dur = dur + el['duration'];
                 })
+            dur = dur * 1000;
+             
         }
-
-        dur = dur * 1000;
+       
         console.log(dur);
 
-        setTimeout(() => {  recordAndStop(null, true, hidePlay, id); }, dur); 
+        setTimeout(() => {  
+          recordAndStop(null, true, hidePlay, id); }, dur + record_delay); // plus a little delay
 
+    
         //create a synth for each track
         const synth = new Tone.PolySynth(2, Tone.Synth, synthParameters).toMaster();
         synths.push(synth);
+
+        // pop end note message to end
+
         //schedule all of the events
         notes_list.forEach(note => {
-          name = note.name;
-          console.log(transpose);
-          console.log(name);
-          transposed_note = Tone.Frequency(name).transpose(transpose);
-          console.log("transposed note",transposed_note);
-        //synth.triggerAttackRelease(transposed_note, note.duration, note.time + now, note.velocity);
-        triggerNote(sound, transposed_note, note.duration);
+          
+          transposed_note = Tone.Frequency(note.name).transpose(transpose);
+          
+          // correct bug where piano sound plays an octave too high
+          
+          if (sound === "piano") {
+            transposed_note = transposed_note.transpose(-12);
+          }
+
+        
+          triggerNote(sound, transposed_note, note.duration, note.time + now);
+          
         });
         
-        console.log(notes_list);
-        
+        // containers to pass to shiny
         shiny_notes = [];
         shiny_ticks = [];
         shiny_duration = [];
         shiny_durationTicks = [];
         
         notes_list.forEach(note => {
-          console.log(note);
           shiny_notes.push(note.midi);
           shiny_ticks.push(note.ticks);
           shiny_duration.push(note.duration);
           shiny_durationTicks.push(note.durationTicks);
         });
-        
-        console.log(JSON.stringify(shiny_notes));
-        console.log(JSON.stringify(shiny_ticks));
-        console.log(JSON.stringify(shiny_duration));
-        console.log(JSON.stringify(shiny_durationTicks));
         
         Shiny.setInputValue("stimuli_pitch", JSON.stringify(shiny_notes));
         Shiny.setInputValue("stimuli_ticks", JSON.stringify(shiny_ticks));
@@ -351,9 +354,6 @@ async function midiToToneJS (url, note_no, hidePlay, transpose, id, sound) {
       
 // load a midi file in the browser
 const midi = await Midi.fromUrl(url).then(midi => {
-
-    console.log(midi);
-    console.log(transpose);
     toneJSPlay(midi, note_no, hidePlay, transpose, id, sound);
     
 })
@@ -404,13 +404,35 @@ function playMidiFileAndRecordAfter(url, toneJS, note_no, hidePlay, id, transpos
     
 }
 
+function diff(ary) {
+    var newA = [];
+    for (var i = 1; i < ary.length; i++)  newA.push(ary[i] - ary[i - 1]);
+    newA.unshift(0); // pop a 0 on the front
+    return newA;
+}
+
 playback_count = 0; // number of times user presses play in a trial
 
 function updatePlaybackCount() {
+    
     playback_count =  playback_count + 1;
-    console.log(playback_count);
+    
+    if (playback_count === 1) {
+      playbackTimes = [];
+    }
+    
+    // record playback values in time
+    playbackTimes.push(Date.now());
+    
+    var playbackTimesDiff = diff(playbackTimes);
+    var playbackTimesCumSum = [];
+    playbackTimesDiff.reduce(function(a,b,i) { return playbackTimesCumSum[i] = a+b; },0);
+    console.log(playbackTimesCumSum);
+
     Shiny.setInputValue("playback_count", playback_count);
- }
+    Shiny.setInputValue("playback_times", JSON.stringify(playbackTimesCumSum));
+
+}
 
 
  //

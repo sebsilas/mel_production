@@ -109,14 +109,14 @@ function errorHandler (e) {
 
 async function getMedia(pc) {
     
+if (typeof navigator.mediaDevices.getUserMedia === 'undefined') {
+    
     navigator.getUserMedia = (
     navigator.getUserMedia ||
     navigator.webkitGetUserMedia ||
     navigator.mozGetUserMedia ||
     navigator.msGetUserMedia
 );
-
-if (typeof navigator.mediaDevices.getUserMedia === 'undefined') {
     navigator.getUserMedia({
         audio: true
     }, gotStream, errorHandler);

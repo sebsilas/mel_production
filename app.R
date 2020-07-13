@@ -558,6 +558,12 @@ create.test <- function(test_format, item_bank) {
           pages <- sample.random.stimuli.no(page_type, 629, page_info$stimuli_no, page_pars)
           tl <- append(tl, pages, after = length(tl))
         }
+        
+        else if (page_type == "play_long_tone_record_audio_page") {
+          user.sample <- item.sampler(item_bank, page_info$stimuli_no)
+          pages <- create.pages(user.sample, page_type, page_pars)
+          tl <- append(tl, pages, after = length(tl))
+        }
         else {}
         
       } 

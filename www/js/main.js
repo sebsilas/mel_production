@@ -63,8 +63,9 @@ function testMediaRecorder () {
 function testFeatureCapability() {
   
     console.log(testMediaRecorder());
+    console.log(Modernizr.webaudio);
     
-    if (Modernizr.audio & Modernizr.audiopreload & Modernizr.webaudio & testMediaRecorder()) {
+    if (Modernizr.webaudio & testMediaRecorder()) {
         console.log("This browser has the necessary features");
         Shiny.setInputValue("browser_capable", "TRUE");
     } 
